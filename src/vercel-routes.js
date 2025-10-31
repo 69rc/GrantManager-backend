@@ -35,8 +35,12 @@ function requireAdmin(req, res, next) {
     next();
 }
 export async function registerRoutes(app) {
-    // Enable CORS for all routes (allows requests from any origin)
-    app.use(cors());
+    // Enable CORS for specific frontend origin
+    app.use(cors({
+        origin: ['https://grant-manager-frontend-ekb1.vercel.app', 'http://localhost:3000'],
+        
+        credentials: true
+    }));
     // Authentication routes
     app.post("/api/auth/register", async (req, res) => {
         try {
