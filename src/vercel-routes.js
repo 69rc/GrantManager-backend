@@ -9,7 +9,7 @@ import { registerUserSchema, loginSchema, insertGrantApplicationSchema, updateGr
 const upload = multer({
     dest: "uploads/",
     limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB limit
+        fileSize: 10 * 1024 * 1024, 
     },
     fileFilter: (_req, file, cb) => {
         const allowedTypes = [".pdf", ".doc", ".docx"];
@@ -37,7 +37,7 @@ function requireAdmin(req, res, next) {
 export async function registerRoutes(app) {
     // Enable CORS for specific frontend origin
     app.use(cors({
-        origin: ['https://grant-manager-frontend-ekb1.vercel.app', 'http://localhost:3000'],
+        origin: ['https://grant-manager-frontend-gtgj.vercel.app', 'http://localhost:3000'],
         
         credentials: true
     }));
