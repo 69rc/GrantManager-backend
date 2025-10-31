@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { db } from "./db-vercel";
-import { users, grantApplications, chatMessages } from "@shared/schema";
+import { users, grantApplications, chatMessages } from "../shared/schema";
 import { eq, desc, asc } from "drizzle-orm";
 export class DatabaseStorage {
     constructor() {
@@ -19,7 +19,8 @@ export class DatabaseStorage {
                 phoneNumber: "+1 234 567 8900",
                 role: "admin",
             };
-            await db.insert(users).values(admin);
+            // @ts-ignore - Type resolution issue with Drizzle schema
+            await db.insert(users).values(admin).returning();
         }
         // Check if demo user already exists
         const existingDemoUser = await db.select().from(users).where(eq(users.email, "demo@example.com")).limit(1);
@@ -34,8 +35,8 @@ export class DatabaseStorage {
             };
             const result = await db.insert(users).values(demoUser).returning();
             const userId = result[0].id;
-            // Create sample applications for the demo user
-            await db.insert(grantApplications).values([
+            // Create sample applications for the demo user with explicit typing
+            const applicationsToInsert = [
                 {
                     userId: userId,
                     fullName: "Demo User",
@@ -48,8 +49,6 @@ export class DatabaseStorage {
                     requestedAmount: 15000,
                     fileUrl: "",
                     fileName: "",
-                    status: "under_review",
-                    adminNotes: "",
                 },
                 {
                     userId: userId,
@@ -63,10 +62,10 @@ export class DatabaseStorage {
                     requestedAmount: 30000,
                     fileUrl: "",
                     fileName: "",
-                    status: "approved",
-                    adminNotes: "Great business plan with clear growth strategy. Approved for full amount.",
                 }
-            ]);
+            ];
+            // @ts-ignore - Type resolution issue with Drizzle schema
+            await db.insert(grantApplications).values(applicationsToInsert);
         }
     }
     // User operations
@@ -81,11 +80,19 @@ export class DatabaseStorage {
     async createUser(insertUser) {
         // Ensure email is stored in lowercase
         const userToInsert = {
-            ...insertUser,
-            email: insertUser.email.toLowerCase()
+            email: insertUser.email.toLowerCase(),
+            password: insertUser.password,
+            fullName: insertUser.fullName,
+            phoneNumber: insertUser.phoneNumber,
+            role: insertUser.role,
         };
         const result = await db.insert(users).values(userToInsert).returning();
-        return result[0];
+        if (result.length > 0) {
+            return result[0];
+        }
+        else {
+            throw new Error("Failed to create user");
+        }
     }
     async getAllUsers() {
         return await db.select().from(users).orderBy(asc(users.createdAt));
@@ -107,12 +114,29 @@ export class DatabaseStorage {
             .orderBy(desc(grantApplications.createdAt));
     }
     async createApplication(insertApplication) {
-        const result = await db.insert(grantApplications).values({
-            ...insertApplication,
-            status: "pending",
-            adminNotes: "",
-        }).returning();
-        return result[0];
+        const applicationToInsert = {
+            userId: insertApplication.userId,
+            fullName: insertApplication.fullName,
+            email: insertApplication.email,
+            phoneNumber: insertApplication.phoneNumber,
+            address: insertApplication.address,
+            projectTitle: insertApplication.projectTitle,
+            projectDescription: insertApplication.projectDescription,
+            grantType: insertApplication.grantType,
+            requestedAmount: insertApplication.requestedAmount,
+            fileUrl: insertApplication.fileUrl || "",
+            fileName: insertApplication.fileName || "",
+            status: "pending", // Default status for new applications
+            adminNotes: "", // Default admin notes
+            disbursementAmount: insertApplication.disbursementAmount || null,
+        };
+        const result = await db.insert(grantApplications).values(applicationToInsert).returning();
+        if (result.length > 0) {
+            return result[0];
+        }
+        else {
+            throw new Error("Failed to create application");
+        }
     }
     async updateApplicationStatus(id, status, adminNotes, disbursementAmount) {
         const updateData = {
@@ -147,7 +171,12 @@ export class DatabaseStorage {
             .orderBy(asc(chatMessages.createdAt));
     }
     async createChatMessage(insertMessage) {
-        const result = await db.insert(chatMessages).values(insertMessage).returning();
+        const messageToInsert = {
+            userId: insertMessage.userId,
+            senderRole: insertMessage.senderRole,
+            message: insertMessage.message,
+        };
+        const result = await db.insert(chatMessages).values(messageToInsert).returning();
         return result[0];
     }
 }

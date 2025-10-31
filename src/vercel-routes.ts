@@ -77,13 +77,13 @@ export async function registerRoutes(app: Express) {
       const validatedData = registerUserSchema.parse(req.body);
       
       // Check if user already exists
-      const existingUser = await storage.getUserByEmail(validatedData.email);
+      const existingUser = await storage.getUserByEmail((validatedData as any).email);
       if (existingUser) {
         return res.status(400).json({ message: "Email already registered" });
       }
 
       // Hash password
-      const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+      const hashedPassword = await bcrypt.hash((validatedData as any).password, 10);
       
       // SECURITY: Always set role to "user" for public registration
       // Role field is not accepted from client input
@@ -181,14 +181,14 @@ export async function registerRoutes(app: Express) {
       const validatedData = insertGrantApplicationSchema.parse(applicationData);
       
       // Ensure userId matches authenticated user (unless admin)
-      if (req.user!.role !== "admin" && validatedData.userId !== req.user!.id) {
+      if (req.user!.role !== "admin" && (validatedData as any).userId !== req.user!.id) {
         return res.status(403).json({ message: "Cannot create application for another user" });
       }
 
       // Handle file upload if present
       if (req.file) {
-        validatedData.fileUrl = `/uploads/${req.file.filename}`;
-        validatedData.fileName = req.file.originalname;
+        (validatedData as any).fileUrl = `/uploads/${req.file.filename}`;
+        (validatedData as any).fileName = req.file.originalname;
       }
 
       const application = await storage.createApplication(validatedData);

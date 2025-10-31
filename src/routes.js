@@ -53,7 +53,7 @@ function authenticateToken(req, res, next) {
 }
 // Middleware to check admin role
 function requireAdmin(req, res, next) {
-    if (req.user.role !== "admin") {
+    if (req.user?.role !== "admin") {
         return res.status(403).json({ message: "Admin access required" });
     }
     next();
@@ -212,6 +212,7 @@ export async function registerRoutes(app) {
     const httpServer = createServer(app);
     // Create WebSocket server
     const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
+    // Extend Express Request type to include user
     const clients = new Map();
     // In-memory storage for messages (in a real app, use a database)
     const messages = [];

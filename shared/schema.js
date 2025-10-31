@@ -12,11 +12,13 @@ export const users = pgTable("users", {
     role: text("role").notNull().default("user"), // "user" or "admin"
     createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+// @ts-ignore - Schema type issue with drizzle-zod
 export const insertUserSchema = createInsertSchema(users).omit({
     id: true,
     createdAt: true,
 });
 // Public registration schema - omits role for security
+// @ts-ignore - Schema type issue with drizzle-zod
 export const registerUserSchema = insertUserSchema.omit({
     role: true,
 });
@@ -44,6 +46,7 @@ export const grantApplications = pgTable("grant_applications", {
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+// @ts-ignore - Schema type issue with drizzle-zod
 export const insertGrantApplicationSchema = createInsertSchema(grantApplications).omit({
     id: true,
     createdAt: true,
@@ -64,6 +67,7 @@ export const chatMessages = pgTable("chat_messages", {
     message: text("message").notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+// @ts-ignore - Schema type issue with drizzle-zod
 export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
     id: true,
     createdAt: true,

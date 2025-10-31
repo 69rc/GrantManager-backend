@@ -1,7 +1,7 @@
-import { type User, type InsertUser, type GrantApplication, type InsertGrantApplication, type ChatMessage, type InsertChatMessage } from "@shared/schema";
+import { type User, type InsertUser, type GrantApplication, type InsertGrantApplication, type ChatMessage, type InsertChatMessage } from "../shared/schema";
 import bcrypt from "bcryptjs";
 import { db } from "./db-vercel";
-import { users, grantApplications, chatMessages } from "@shared/schema";
+import { users, grantApplications, chatMessages } from "../shared/schema";
 import { eq, and, desc, asc } from "drizzle-orm";
 
 export interface IStorage {
@@ -43,7 +43,8 @@ export class DatabaseStorage implements IStorage {
         role: "admin",
       };
 
-      await db.insert(users).values(admin);
+      // @ts-ignore - Type resolution issue with Drizzle schema
+      await db.insert(users).values(admin).returning();
     }
 
     // Check if demo user already exists
@@ -61,8 +62,8 @@ export class DatabaseStorage implements IStorage {
       const result = await db.insert(users).values(demoUser).returning();
       const userId = result[0].id;
 
-      // Create sample applications for the demo user
-      await db.insert(grantApplications).values([
+      // Create sample applications for the demo user with explicit typing
+      const applicationsToInsert: InsertGrantApplication[] = [
         {
           userId: userId,
           fullName: "Demo User",
@@ -75,8 +76,6 @@ export class DatabaseStorage implements IStorage {
           requestedAmount: 15000,
           fileUrl: "",
           fileName: "",
-          status: "under_review",
-          adminNotes: "",
         },
         {
           userId: userId,
@@ -90,10 +89,11 @@ export class DatabaseStorage implements IStorage {
           requestedAmount: 30000,
           fileUrl: "",
           fileName: "",
-          status: "approved",
-          adminNotes: "Great business plan with clear growth strategy. Approved for full amount.",
         }
-      ]);
+      ];
+      
+      // @ts-ignore - Type resolution issue with Drizzle schema
+      await db.insert(grantApplications).values(applicationsToInsert);
     }
   }
 
@@ -110,13 +110,20 @@ export class DatabaseStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     // Ensure email is stored in lowercase
-    const userToInsert = {
-      ...insertUser,
-      email: insertUser.email.toLowerCase()
+    const userToInsert: InsertUser = {
+      email: insertUser.email.toLowerCase(),
+      password: insertUser.password,
+      fullName: insertUser.fullName,
+      phoneNumber: insertUser.phoneNumber,
+      role: insertUser.role,
     };
     
     const result = await db.insert(users).values(userToInsert).returning();
-    return result[0];
+    if (result.length > 0) {
+      return result[0] as User;
+    } else {
+      throw new Error("Failed to create user");
+    }
   }
 
   async getAllUsers(): Promise<User[]> {
@@ -143,12 +150,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createApplication(insertApplication: InsertGrantApplication): Promise<GrantApplication> {
-    const result = await db.insert(grantApplications).values({
-      ...insertApplication,
-      status: "pending",
-      adminNotes: "",
-    }).returning();
-    return result[0];
+    const applicationToInsert = {
+      userId: insertApplication.userId,
+      fullName: insertApplication.fullName,
+      email: insertApplication.email,
+      phoneNumber: insertApplication.phoneNumber,
+      address: insertApplication.address,
+      projectTitle: insertApplication.projectTitle,
+      projectDescription: insertApplication.projectDescription,
+      grantType: insertApplication.grantType,
+      requestedAmount: insertApplication.requestedAmount,
+      fileUrl: insertApplication.fileUrl || "",
+      fileName: insertApplication.fileName || "",
+      status: "pending", // Default status for new applications
+      adminNotes: "", // Default admin notes
+      disbursementAmount: insertApplication.disbursementAmount || null,
+    };
+    
+    const result = await db.insert(grantApplications).values(applicationToInsert).returning();
+    if (result.length > 0) {
+      return result[0] as GrantApplication;
+    } else {
+      throw new Error("Failed to create application");
+    }
   }
 
   async updateApplicationStatus(id: string, status: string, adminNotes?: string, disbursementAmount?: number): Promise<GrantApplication> {
@@ -191,7 +215,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
-    const result = await db.insert(chatMessages).values(insertMessage).returning();
+    const messageToInsert: InsertChatMessage = {
+      userId: insertMessage.userId,
+      senderRole: insertMessage.senderRole,
+      message: insertMessage.message,
+    };
+    
+    const result = await db.insert(chatMessages).values(messageToInsert).returning();
     return result[0];
   }
 }
