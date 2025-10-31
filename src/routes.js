@@ -36,24 +36,13 @@ const apiLimiter = rateLimit({
     max: 1000,
     message: "Too many requests, please try again later",
 });
-// Middleware to verify JWT token
-function authenticateToken(req, res, next) {
-    const authHeader = req.headers["authorization"];
-    const token = authHeader && authHeader.split(" ")[1];
-    if (!token) {
-        return res.status(401).json({ message: "Access token required" });
-    }
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) {
-            return res.status(403).json({ message: "Invalid or expired token" });
-        }
-        req.user = user;
-        next();
-    });
-}
 // Middleware to check admin role
 function requireAdmin(req, res, next) {
-    if (req.user?.role !== "admin") {
+    // In this version without JWT authentication, 
+    // you might authenticate through a different mechanism
+    // For now, assuming req.user is set by some other middleware
+    // Or you could implement a different authentication method
+    if (!req.user || req.user.role !== "admin") {
         return res.status(403).json({ message: "Admin access required" });
     }
     next();
@@ -121,7 +110,7 @@ export async function registerRoutes(app) {
         }
     });
     // Grant application routes
-    app.get("/api/applications", authenticateToken, requireAdmin, async (req, res) => {
+    app.get("/api/applications", requireAdmin, async (req, res) => {
         try {
             const applications = await storage.getAllApplications();
             res.json(applications);
@@ -130,13 +119,13 @@ export async function registerRoutes(app) {
             res.status(500).json({ message: "Failed to fetch applications" });
         }
     });
-    app.get("/api/applications/user/:userId", authenticateToken, async (req, res) => {
+    app.get("/api/applications/user/:userId", async (req, res) => {
         try {
             const { userId } = req.params;
-            // Users can only view their own applications, admins can view any
-            if (req.user.role !== "admin" && req.user.id !== userId) {
-                return res.status(403).json({ message: "Access denied" });
-            }
+            // In this version without JWT authentication, 
+            // you would need to implement a different way to verify user identity
+            // For now, this check is disabled since authentication is removed
+            // You may want to implement session-based auth or another method
             const applications = await storage.getApplicationsByUser(userId);
             res.json(applications);
         }
@@ -144,15 +133,14 @@ export async function registerRoutes(app) {
             res.status(500).json({ message: "Failed to fetch applications" });
         }
     });
-    app.post("/api/applications", authenticateToken, upload.single("file"), async (req, res) => {
+    app.post("/api/applications", upload.single("file"), async (req, res) => {
         try {
             // Parse JSON data from multipart form
             const applicationData = JSON.parse(req.body.data || "{}");
             const validatedData = insertGrantApplicationSchema.parse(applicationData);
-            // Ensure userId matches authenticated user (unless admin)
-            if (req.user.role !== "admin" && validatedData.userId !== req.user.id) {
-                return res.status(403).json({ message: "Cannot create application for another user" });
-            }
+            // In this version without JWT authentication,
+            // you would need a different way to verify user identity
+            // For now, this check is disabled since authentication is removed
             // Handle file upload if present
             if (req.file) {
                 validatedData.fileUrl = `/uploads/${req.file.filename}`;
@@ -171,7 +159,7 @@ export async function registerRoutes(app) {
             res.status(500).json({ message: "Failed to create application" });
         }
     });
-    app.patch("/api/applications/:id/status", authenticateToken, requireAdmin, async (req, res) => {
+    app.patch("/api/applications/:id/status", requireAdmin, async (req, res) => {
         try {
             const { id } = req.params;
             const validatedData = updateGrantApplicationStatusSchema.parse(req.body);
@@ -197,7 +185,7 @@ export async function registerRoutes(app) {
         }
     });
     // User routes (admin only)
-    app.get("/api/users", authenticateToken, requireAdmin, async (req, res) => {
+    app.get("/api/users", requireAdmin, async (req, res) => {
         try {
             const users = await storage.getAllUsers();
             // Remove passwords from response
