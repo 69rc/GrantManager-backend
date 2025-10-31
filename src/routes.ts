@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import express from "express";
@@ -43,7 +43,7 @@ const apiLimiter = rateLimit({
 });
 
 // Middleware to verify JWT token
-function authenticateToken(req: any, res: any, next: any) {
+function authenticateToken(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
@@ -61,8 +61,8 @@ function authenticateToken(req: any, res: any, next: any) {
 }
 
 // Middleware to check admin role
-function requireAdmin(req: any, res: any, next: any) {
-  if (req.user.role !== "admin") {
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (req.user?.role !== "admin") {
     return res.status(403).json({ message: "Admin access required" });
   }
   next();
@@ -165,7 +165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { userId } = req.params;
       
       // Users can only view their own applications, admins can view any
-      if (req.user.role !== "admin" && req.user.id !== userId) {
+      if (req.user!.role !== "admin" && req.user!.id !== userId) {
         return res.status(403).json({ message: "Access denied" });
       }
 
@@ -183,7 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertGrantApplicationSchema.parse(applicationData);
       
       // Ensure userId matches authenticated user (unless admin)
-      if (req.user.role !== "admin" && validatedData.userId !== req.user.id) {
+      if (req.user!.role !== "admin" && validatedData.userId !== req.user!.id) {
         return res.status(403).json({ message: "Cannot create application for another user" });
       }
 
