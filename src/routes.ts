@@ -176,7 +176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/applications", authenticateToken, upload.single("file"), async (req, res) => {
+  app.post("/api/applications", authenticateToken, upload.single("file") as any, async (req, res) => {
     try {
       // Parse JSON data from multipart form
       const applicationData = JSON.parse(req.body.data || "{}");
