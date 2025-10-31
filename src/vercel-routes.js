@@ -1,6 +1,5 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import rateLimit from "express-rate-limit";
 import multer from "multer";
 import path from "path";
 import { storage } from "./storage";
@@ -23,17 +22,6 @@ const upload = multer({
     },
 });
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
-// Rate limiters
-const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // 5 requests per window
-    message: "Too many authentication attempts, please try again later",
-});
-const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 1000,
-    message: "Too many requests, please try again later",
-});
 // Middleware to check admin role
 function requireAdmin(req, res, next) {
     // In this version without JWT authentication, 
@@ -46,10 +34,8 @@ function requireAdmin(req, res, next) {
     next();
 }
 export async function registerRoutes(app) {
-    // Apply general rate limiting to all API routes
-    app.use("/api", apiLimiter);
     // Authentication routes
-    app.post("/api/auth/register", authLimiter, async (req, res) => {
+    app.post("/api/auth/register", async (req, res) => {
         try {
             // Use public registration schema that omits role field
             const validatedData = registerUserSchema.parse(req.body);
@@ -81,7 +67,7 @@ export async function registerRoutes(app) {
             res.status(500).json({ message: "Registration failed" });
         }
     });
-    app.post("/api/auth/login", authLimiter, async (req, res) => {
+    app.post("/api/auth/login", async (req, res) => {
         try {
             const validatedData = loginSchema.parse(req.body);
             // Find user
