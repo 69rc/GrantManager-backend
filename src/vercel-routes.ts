@@ -1,5 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import express from "express";
+import cors from "cors";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import multer from "multer";
@@ -39,6 +40,8 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
 }
 
 export async function registerRoutes(app: Express) {
+  // Enable CORS for all routes (allows requests from any origin)
+  app.use(cors());
 
   // Authentication routes
   app.post("/api/auth/register", async (req, res) => {
