@@ -37,7 +37,7 @@ function requireAdmin(req, res, next) {
 export async function registerRoutes(app) {
     // Enable CORS for specific frontend origin
     app.use(cors({
-        origin: ['https://grant-manager-frontend-gtgj.vercel.app', 'http://localhost:3000'],
+        origin: ['https://grant-manager-frontend-gtgj.vercel.app', 'http://localhost:3000','https://grant-manager-frontend-ekb1.vercel.app'],
         
         credentials: true
     }));
