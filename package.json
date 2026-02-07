@@ -10,6 +10,8 @@
     "check": "tsc",
     "db:push": "drizzle-kit push"
   },
+  "main": "dist/index.js",
+
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
     "@types/bcryptjs": "^2.4.6",
