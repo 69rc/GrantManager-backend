@@ -5,10 +5,5 @@
       "source": "/(.*)",
       "destination": "/api/index"
     }
-  ],
-  "functions": {
-    "src/api/index.ts": {
-      "runtime": "@vercel/node@2.2.1"
-    }
-  }
+  ]
 }
