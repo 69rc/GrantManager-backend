@@ -25,9 +25,9 @@ app.use((req, res, next) => {
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
   const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
+  res.json = function (bodyJson) {
     capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
+    return originalResJson.call(res, bodyJson);
   };
 
   res.on("finish", () => {
@@ -49,21 +49,23 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
-  const server = await registerRoutes(app);
+// Register routes
+registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  const status = err.status || err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-  });
+  res.status(status).json({ message });
+});
 
-  // ALWAYS serve the API on the port specified in the environment variable PORT
-  // Default to 5000 if not specified.
+// Only start the server if this file is run directly (not imported)
+if (require.main === module) {
   const port = parseInt(process.env.PORT || '5000', 10);
-  
-  server.listen(port, () => {
+  app.listen(port, () => {
     log(`API serving on port ${port}`);
   });
-})();
+}
+
+// Export the app for Vercel serverless functions
+export default app;
