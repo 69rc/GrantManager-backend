@@ -1,6 +1,6 @@
-import express from "express";
-import { registerRoutes } from "./routes";
-import { log } from "./vite";
+import express, { Request, Response, NextFunction } from "express";
+import { registerRoutes } from "../routes";
+import { log } from "../vite";
 
 const app = express();
 
@@ -12,13 +12,13 @@ app.use(express.urlencoded({ extended: false }));
 app.use('/uploads', express.static('uploads'));
 
 // Logging middleware (same as in your original index.ts)
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse = undefined;
+  let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
   const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
+  res.json = function (bodyJson: any, ...args: any[]) {
     capturedJsonResponse = bodyJson;
     return originalResJson.apply(res, [bodyJson, ...args]);
   };
@@ -46,7 +46,7 @@ app.use((req, res, next) => {
 registerRoutes(app);
 
 // Error handling middleware
-app.use((err, _req, res, _next) => {
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   const status = err.status || err.statusCode || 500;
   const message = err.message || "Internal Server Error";
   res.status(status).json({ message });
