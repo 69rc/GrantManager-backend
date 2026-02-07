@@ -1,9 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import express from 'express';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
-import { registerRoutes } from '../routes';
-import { log } from '../vite';
+import express, { Request, Response, NextFunction } from 'express';
+import { registerRoutes } from '../routes'; // Ensure this path is correct
+import { log } from '../vite'; // Ensure this path is correct
 
 // Create an Express app
 const app = express();
@@ -16,7 +14,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use('/uploads', express.static('uploads'));
 
 // Logging middleware (same as in your original index.ts)
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
@@ -49,26 +47,11 @@ app.use((req, res, next) => {
 // Register all routes
 registerRoutes(app);
 
-// Create an HTTP server
-const httpServer = createServer(app);
-
-// Create a Socket.IO server
-const io = new Server(httpServer, {
-  cors: {
-    origin: process.env.NODE_ENV === 'production' 
-      ? process.env.FRONTEND_URL || 'https://grant-manager-frontend-ekb1.vercel.app'
-      : [process.env.LOCALHOST_URL || 'http://localhost:3000', 'http://localhost:5173'],
-    credentials: true
-  }
-});
-
-// Handle Socket.IO connections
-io.on('connection', (socket) => {
-  console.log('New client connected');
-  
-  socket.on('disconnect', () => {
-    console.log('Client disconnected');
-  });
+// Error handling middleware with proper types
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  const status = err.status || err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
+  res.status(status).json({ message });
 });
 
 // Convert Express app to a handler that Vercel can use
