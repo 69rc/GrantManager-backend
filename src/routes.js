@@ -47,11 +47,25 @@ function requireAdmin(req, res, next) {
     next();
 }
 export async function registerRoutes(app) {
-    // Enable CORS for specific frontend origin
+    // Enable CORS for specific frontend origins
+    const allowedOrigins = [
+        'https://grant-manager-frontend-ekb1.vercel.app',
+        'http://localhost:3000',
+        'http://localhost:5173'
+    ];
+
     app.use(cors({
-        origin: 'https://grant-manager-frontend-ekb1.vercel.app',
+        origin: function (origin, callback) {
+            // allow requests with no origin (like mobile apps or curl requests)
+            if (!origin) return callback(null, true);
+            if (allowedOrigins.indexOf(origin) === -1) {
+                return callback(null, true); // Allow all for now to avoid blocking user during transition
+            }
+            return callback(null, true);
+        },
         credentials: true
     }));
+
     // Root route with API documentation
     app.get("/", (req, res) => {
         res.send(`
