@@ -29,10 +29,11 @@ try {
 
 const poolConfig = {
     connectionString,
-    max: 1,
+    max: 5,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 5000,
+    connectionTimeoutMillis: 15000,
 };
+
 
 if (needsSSL) {
     poolConfig.ssl = {

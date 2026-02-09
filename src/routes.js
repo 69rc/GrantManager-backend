@@ -35,17 +35,31 @@ const upload = multer({
 });
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
-// Middleware to check admin role
+// Middleware to verify JWT token and attach user to request
+function authenticate(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        return res.status(401).json({ message: "Invalid or expired token" });
+    }
+}
+
+// Middleware to check admin role (must be used after authenticate)
 function requireAdmin(req, res, next) {
-    // In this version without JWT authentication, 
-    // you might authenticate through a different mechanis
-    // For now, assuming req.user is set by some other middleware
-    // Or you could implement a different authentication method
     if (!req.user || req.user.role !== "admin") {
         return res.status(403).json({ message: "Admin access required" });
     }
     next();
 }
+
 export async function registerRoutes(app) {
     // Enable CORS for specific frontend origins
     const allowedOrigins = [
@@ -242,7 +256,7 @@ export async function registerRoutes(app) {
         }
     });
     // Grant application routes
-    app.get("/api/applications", requireAdmin, async (req, res) => {
+    app.get("/api/applications", authenticate, requireAdmin, async (req, res) => {
         try {
             const applications = await storage.getAllApplications();
             res.json(applications);
@@ -251,6 +265,7 @@ export async function registerRoutes(app) {
             res.status(500).json({ message: "Failed to fetch applications" });
         }
     });
+
     app.get("/api/applications/user/:userId", async (req, res) => {
         try {
             const { userId } = req.params;
@@ -265,18 +280,15 @@ export async function registerRoutes(app) {
             res.status(500).json({ message: "Failed to fetch applications" });
         }
     });
-    app.post("/api/applications", upload.single("file"), async (req, res) => {
+    app.post("/api/applications", async (req, res) => {
         try {
-            // Parse JSON data from multipart form
-            const applicationData = JSON.parse(req.body.data || "{}");
-            const validatedData = insertGrantApplicationSchema.parse(applicationData);
+            console.log('[API] Creating application with body:', JSON.stringify(req.body, null, 2));
+            // Standard JSON submission (application/json)
+            const validatedData = insertGrantApplicationSchema.parse(req.body);
 
-            // Handle file upload if present
-            if (req.file) {
-                // With Cloudinary, the file URL is in req.file.path
-                validatedData.fileUrl = req.file.path;
-                validatedData.fileName = req.file.originalname;
-            }
+            // File handling disabled for now
+            validatedData.fileUrl = "";
+            validatedData.fileName = "";
 
             const application = await storage.createApplication(validatedData);
 
@@ -288,6 +300,7 @@ export async function registerRoutes(app) {
         }
         catch (error) {
             if (error.name === "ZodError") {
+                console.error('[API] Validation error:', JSON.stringify(error.errors, null, 2));
                 return res.status(400).json({ message: "Invalid input data", errors: error.errors });
             }
             console.error('[API] Application submission error:', error);
@@ -295,7 +308,9 @@ export async function registerRoutes(app) {
         }
     });
 
-    app.patch("/api/applications/:id/status", requireAdmin, async (req, res) => {
+
+    app.patch("/api/applications/:id/status", authenticate, requireAdmin, async (req, res) => {
+
         try {
             const { id } = req.params;
             const validatedData = updateGrantApplicationStatusSchema.parse(req.body);
@@ -321,7 +336,8 @@ export async function registerRoutes(app) {
         }
     });
     // User routes (admin only)
-    app.get("/api/users", requireAdmin, async (req, res) => {
+    app.get("/api/users", authenticate, requireAdmin, async (req, res) => {
+
         try {
             const users = await storage.getAllUsers();
             // Remove passwords from response

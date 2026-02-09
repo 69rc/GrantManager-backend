@@ -4,7 +4,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 // Users table
 export const users = pgTable("users", {
-    id: varchar("id").primaryKey().default(sql `gen_random_uuid()`),
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
     email: text("email").notNull().unique(),
     password: text("password").notNull(),
     fullName: text("full_name").notNull(),
@@ -28,7 +28,7 @@ export const loginSchema = z.object({
 });
 // Grant Applications table
 export const grantApplications = pgTable("grant_applications", {
-    id: varchar("id").primaryKey().default(sql `gen_random_uuid()`),
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
     userId: varchar("user_id").notNull(),
     fullName: text("full_name").notNull(),
     email: text("email").notNull(),
@@ -47,13 +47,20 @@ export const grantApplications = pgTable("grant_applications", {
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 // @ts-ignore - Schema type issue with drizzle-zod
-export const insertGrantApplicationSchema = createInsertSchema(grantApplications).omit({
-    id: true,
-    createdAt: true,
-    updatedAt: true,
-    status: true,
-    adminNotes: true,
+export const insertGrantApplicationSchema = z.object({
+    userId: z.string(),
+    fullName: z.string(),
+    email: z.string().email(),
+    phoneNumber: z.string(),
+    address: z.string(),
+    projectTitle: z.string(),
+    projectDescription: z.string(),
+    grantType: z.string(),
+    requestedAmount: z.number(),
+    fileUrl: z.string().nullable().optional(),
+    fileName: z.string().nullable().optional(),
 });
+
 export const updateGrantApplicationStatusSchema = z.object({
     status: z.enum(["pending", "under_review", "approved", "rejected"]),
     adminNotes: z.string().optional(),
@@ -61,7 +68,7 @@ export const updateGrantApplicationStatusSchema = z.object({
 });
 // Chat Messages table
 export const chatMessages = pgTable("chat_messages", {
-    id: varchar("id").primaryKey().default(sql `gen_random_uuid()`),
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
     userId: varchar("user_id").notNull(),
     senderRole: text("sender_role").notNull(), // "user" or "admin"
     message: text("message").notNull(),
