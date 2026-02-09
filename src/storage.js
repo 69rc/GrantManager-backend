@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
-import { db } from "./db-vercel";
-import { users, grantApplications, chatMessages } from "../shared/schema";
+import { db } from "./db-vercel.js";
+import { users, grantApplications, chatMessages } from "../shared/schema.js";
 import { eq, desc, asc } from "drizzle-orm";
 export class DatabaseStorage {
     constructor() {

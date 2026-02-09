@@ -1,6 +1,8 @@
 import express from "express";
-import { registerRoutes } from "./routes";
-import { log } from "./vite";
+import { registerRoutes } from "./src/routes.js";
+import { log } from "./src/vite.js";
+import { fileURLToPath } from 'url';
+
 const app = express();
 app.use(express.json({
     verify: (req, _res, buf) => {
@@ -41,12 +43,16 @@ app.use((err, _req, res, _next) => {
     const message = err.message || "Internal Server Error";
     res.status(status).json({ message });
 });
-// Only start the server if this file is run directly (not imported)
-if (require.main === module) {
-    const port = parseInt(process.env.PORT || '5000', 10);
+
+// Check if this file is the entry point
+const isMain = process.argv[1] && (fileURLToPath(import.meta.url) === process.argv[1]);
+
+if (isMain || process.env.NODE_ENV === "development") {
+    const port = parseInt(process.env.PORT || '5001', 10);
     app.listen(port, () => {
         log(`API serving on port ${port}`);
     });
 }
+
 // Export the app for Vercel serverless functions
 export default app;

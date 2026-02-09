@@ -5,8 +5,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import multer from "multer";
 import path from "path";
-import { storage } from "./storage";
-import { registerUserSchema, loginSchema, insertGrantApplicationSchema, updateGrantApplicationStatusSchema } from "@shared/schema";
+import { storage } from "./storage.js";
+import { registerUserSchema, loginSchema, insertGrantApplicationSchema, updateGrantApplicationStatusSchema } from "../shared/schema.js";
 // Configure multer for file uploads
 const upload = multer({
     dest: "uploads/",
@@ -42,6 +42,121 @@ export async function registerRoutes(app) {
         origin: 'https://grant-manager-frontend-ekb1.vercel.app',
         credentials: true
     }));
+    // Root route with API documentation
+    app.get("/", (req, res) => {
+        res.send(`
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>GrantHub API | Service Status</title>
+                <style>
+                    :root {
+                        --primary: #4f46e5;
+                        --bg: #0f172a;
+                        --card: #1e293b;
+                        --text: #f8fafc;
+                        --accent: #818cf8;
+                    }
+                    body {
+                        font-family: 'Inter', -apple-system, sans-serif;
+                        background: var(--bg);
+                        color: var(--text);
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        min-height: 100vh;
+                        margin: 0;
+                        padding: 20px;
+                    }
+                    .container {
+                        max-width: 600px;
+                        width: 100%;
+                        background: var(--card);
+                        padding: 40px;
+                        border-radius: 24px;
+                        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        backdrop-filter: blur(10px);
+                    }
+                    h1 { 
+                        margin-top: 0; 
+                        color: var(--accent);
+                        font-size: 2.5rem;
+                        letter-spacing: -0.025em;
+                    }
+                    .status {
+                        display: inline-flex;
+                        align-items: center;
+                        background: rgba(34, 197, 94, 0.2);
+                        color: #4ade80;
+                        padding: 6px 12px;
+                        border-radius: 99px;
+                        font-size: 0.875rem;
+                        font-weight: 600;
+                        margin-bottom: 24px;
+                    }
+                    .status::before {
+                        content: '';
+                        width: 8px;
+                        height: 8px;
+                        background: #4ade80;
+                        border-radius: 50%;
+                        margin-right: 8px;
+                        box-shadow: 0 0 10px #4ade80;
+                    }
+                    p { line-height: 1.6; color: #94a3b8; }
+                    .endpoints {
+                        margin-top: 32px;
+                        display: grid;
+                        gap: 16px;
+                    }
+                    .endpoint {
+                        background: rgba(255, 255, 255, 0.05);
+                        padding: 16px;
+                        border-radius: 12px;
+                        border: 1px solid rgba(255, 255, 255, 0.05);
+                    }
+                    .endpoint span {
+                        font-weight: 700;
+                        color: var(--accent);
+                        margin-right: 8px;
+                    }
+                    code {
+                        background: #000;
+                        padding: 2px 6px;
+                        border-radius: 4px;
+                        font-size: 0.9em;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="status">System Online</div>
+                    <h1>GrantHub API</h1>
+                    <p>Welcome to the GrantHub backend. This service manages grant applications, user authentication, and real-time administrative communication.</p>
+                    
+                    <div class="endpoints">
+                        <div class="endpoint">
+                            <span>Auth:</span> <code>/api/auth/*</code>
+                        </div>
+                        <div class="endpoint">
+                            <span>Applications:</span> <code>/api/applications/*</code>
+                        </div>
+                        <div class="endpoint">
+                            <span>Users:</span> <code>/api/users</code>
+                        </div>
+                        <div class="endpoint">
+                            <span>Real-time:</span> <code>/ws</code> (WebSocket)
+                        </div>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `);
+    });
+
     // Authentication routes
     app.post("/api/auth/register", async (req, res) => {
         try {
