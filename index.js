@@ -1,8 +1,10 @@
 import express from "express";
 import { registerRoutes } from "./src/routes.js";
 import { fileURLToPath } from 'url';
+import { initStorage } from "./src/storage.js";
 
 export function log(message, source = "express") {
+
     const formattedTime = new Date().toLocaleTimeString("en-US", {
         hour: "numeric",
         minute: "2-digit",
@@ -45,8 +47,14 @@ app.use((req, res, next) => {
     });
     next();
 });
+// Initialize storage and seed data
+initStorage().catch(err => {
+    log(`Storage initialization failed: ${err.message}`, "error");
+});
+
 // Register routes
 registerRoutes(app);
+
 app.use((err, _req, res, _next) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";

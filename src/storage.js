@@ -4,9 +4,9 @@ import { users, grantApplications, chatMessages } from "../shared/schema.js";
 import { eq, desc, asc } from "drizzle-orm";
 export class DatabaseStorage {
     constructor() {
-        // Initialize database storage with seed data if needed
-        this.seedData();
+        // Seeding moved to initStorage for reliability on Vercel
     }
+
     async seedData() {
         // Check if admin user already exists
         const existingAdmin = await db.select().from(users).where(eq(users.email, "admin@granthub.com")).limit(1);
@@ -181,3 +181,14 @@ export class DatabaseStorage {
     }
 }
 export const storage = new DatabaseStorage();
+
+export async function initStorage() {
+    console.log("[STORAGE] Initializing database storage...");
+    try {
+        await storage.seedData();
+        console.log("[STORAGE] Database storage initialized successfully.");
+    } catch (error) {
+        console.error("[STORAGE] Failed to initialize database storage:", error);
+        // We don't throw here to allow the server to start even if seeding fails
+    }
+}
