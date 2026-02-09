@@ -38,7 +38,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-producti
 // Middleware to check admin role
 function requireAdmin(req, res, next) {
     // In this version without JWT authentication, 
-    // you might authenticate through a different mechanism
+    // you might authenticate through a different mechanis
     // For now, assuming req.user is set by some other middleware
     // Or you could implement a different authentication method
     if (!req.user || req.user.role !== "admin") {
