@@ -11,26 +11,39 @@ if (!process.env.DATABASE_URL) {
 
 // Masked logging for debugging ENOTFOUND issues
 const dbUrl = process.env.DATABASE_URL;
-const maskedUrl = dbUrl.substring(0, 15) + "..." + dbUrl.substring(dbUrl.length - 5);
-console.log(`[DB-DEBUG] DATABASE_URL length: ${dbUrl.length}, prefix: ${maskedUrl}`);
+// We handle SSL explicitly to avoid "self signed certificate" errors with managed Postgres
+// Stripping sslmode/pgbouncer from the URL to let pg-pool handle connection details via the config object
+let connectionString = dbUrl;
+const needsSSL = dbUrl.includes("sslmode=require") || process.env.NODE_ENV === "production" || process.env.DB_SSL === "true";
 
-// For Vercel deployment, we need to handle connection pooling carefully
+try {
+    const parsedUrl = new URL(dbUrl);
+    parsedUrl.searchParams.delete("sslmode");
+    // pgbouncer=true can sometimes cause issues with certain pg versions if not handled by the pooler
+    parsedUrl.searchParams.delete("pgbouncer");
+    connectionString = parsedUrl.toString();
+} catch (e) {
+    console.error("[DB-DEBUG] Failed to parse DATABASE_URL, using original", e.message);
+}
+
+
 const poolConfig = {
-    connectionString: process.env.DATABASE_URL,
+    connectionString,
     max: 1,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
 };
 
-// Only enable SSL in production or if explicitly requested
-if (process.env.NODE_ENV === "production" || process.env.DB_SSL === "true") {
+if (needsSSL) {
     poolConfig.ssl = {
         rejectUnauthorized: false
     };
-    console.log("[DB-DEBUG] SSL enabled");
+    console.log("[DB-DEBUG] SSL enabled explicitly (rejectUnauthorized: false)");
 } else {
-    console.log("[DB-DEBUG] SSL disabled (local/development)");
+    console.log("[DB-DEBUG] SSL disabled");
 }
+
+
 
 const pool = new pg.Pool(poolConfig);
 
