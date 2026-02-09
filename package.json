@@ -26,6 +26,8 @@
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
     "pg": "^8.13.1",
+    "cloudinary": "^2.5.1",
+    "multer-storage-cloudinary": "^4.0.0",
     "ws": "^8.18.0",
     "zod": "^4.1.12"
   },

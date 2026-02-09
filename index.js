@@ -1,7 +1,16 @@
 import express from "express";
 import { registerRoutes } from "./src/routes.js";
-import { log } from "./src/vite.js";
 import { fileURLToPath } from 'url';
+
+export function log(message, source = "express") {
+    const formattedTime = new Date().toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+    });
+    console.log(`${formattedTime} [${source}] ${message}`);
+}
 
 const app = express();
 app.use(express.json({
@@ -10,8 +19,8 @@ app.use(express.json({
     }
 }));
 app.use(express.urlencoded({ extended: false }));
-// Serve uploaded files
-app.use('/uploads', express.static('uploads'));
+// Local uploads are disabled for Cloudinary/Vercel
+
 app.use((req, res, next) => {
     const start = Date.now();
     const path = req.path;

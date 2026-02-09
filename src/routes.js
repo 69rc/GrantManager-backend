@@ -4,26 +4,36 @@ import cors from "cors";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import multer from "multer";
+import { v2 as cloudinary } from "cloudinary";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
 import path from "path";
 import { storage } from "./storage.js";
 import { registerUserSchema, loginSchema, insertGrantApplicationSchema, updateGrantApplicationStatusSchema } from "../shared/schema.js";
-// Configure multer for file uploads
-const upload = multer({
-    dest: "uploads/",
-    limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB limit
-    },
-    fileFilter: (_req, file, cb) => {
-        const allowedTypes = [".pdf", ".doc", ".docx"];
-        const ext = path.extname(file.originalname).toLowerCase();
-        if (allowedTypes.includes(ext)) {
-            cb(null, true);
-        }
-        else {
-            cb(new Error("Only PDF and DOC files are allowed"));
-        }
+
+// Cloudinary configuration
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Configure Cloudinary storage for multer
+const cloudinaryStorage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: "granthub-applications",
+        allowed_formats: ["pdf", "doc", "docx"],
+        resource_type: "auto",
     },
 });
+
+const upload = multer({
+    storage: cloudinaryStorage,
+    limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB limit
+    }
+});
+
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
 // Middleware to check admin role
 function requireAdmin(req, res, next) {
@@ -245,27 +255,31 @@ export async function registerRoutes(app) {
             // Parse JSON data from multipart form
             const applicationData = JSON.parse(req.body.data || "{}");
             const validatedData = insertGrantApplicationSchema.parse(applicationData);
-            // In this version without JWT authentication,
-            // you would need a different way to verify user identity
-            // For now, this check is disabled since authentication is removed
+
             // Handle file upload if present
             if (req.file) {
-                validatedData.fileUrl = `/uploads/${req.file.filename}`;
+                // With Cloudinary, the file URL is in req.file.path
+                validatedData.fileUrl = req.file.path;
                 validatedData.fileName = req.file.originalname;
             }
+
             const application = await storage.createApplication(validatedData);
+
             // In a real app, send email notification here using SendGrid/Nodemailer
             console.log(`[EMAIL NOTIFICATION] New application submitted: ${application.id} by ${application.fullName}`);
             console.log(`[EMAIL NOTIFICATION] Would send email to: ${application.email}`);
+
             res.status(201).json(application);
         }
         catch (error) {
             if (error.name === "ZodError") {
                 return res.status(400).json({ message: "Invalid input data", errors: error.errors });
             }
+            console.error('[API] Application submission error:', error);
             res.status(500).json({ message: "Failed to create application" });
         }
     });
+
     app.patch("/api/applications/:id/status", requireAdmin, async (req, res) => {
         try {
             const { id } = req.params;
