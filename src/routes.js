@@ -50,7 +50,6 @@ export async function registerRoutes(app) {
     // Enable CORS for specific frontend origins
     const allowedOrigins = [
         'https://grant-manager-frontend.vercel.app',
-        'https://grant-manager-frontend-ekb1.vercel.app',
         'http://localhost:3000',
         'http://localhost:5173'
     ];
