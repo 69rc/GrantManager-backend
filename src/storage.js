@@ -129,7 +129,9 @@ export class DatabaseStorage {
             status: "pending", // Default status for new applications
             adminNotes: "", // Default admin notes
             disbursementAmount: insertApplication.disbursementAmount || null,
+            paymentMethod: insertApplication.paymentMethod || null,
         };
+
         const result = await db.insert(grantApplications).values(applicationToInsert).returning();
         if (result.length > 0) {
             return result[0];
@@ -158,6 +160,18 @@ export class DatabaseStorage {
         }
         return result[0];
     }
+    async updatePaymentMethod(id, paymentMethod) {
+        const result = await db
+            .update(grantApplications)
+            .set({ paymentMethod, updatedAt: new Date() })
+            .where(eq(grantApplications.id, id))
+            .returning();
+        if (result.length === 0) {
+            throw new Error("Application not found");
+        }
+        return result[0];
+    }
+
     // Chat message operations
     async getChatMessagesByUser(userId) {
         return await db.select()

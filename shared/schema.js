@@ -43,6 +43,7 @@ export const grantApplications = pgTable("grant_applications", {
     status: text("status").notNull().default("pending"), // "pending", "under_review", "approved", "rejected"
     adminNotes: text("admin_notes"),
     disbursementAmount: integer("disbursement_amount"),
+    paymentMethod: text("payment_method"), // "cheque" or "bank_transfer"
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -57,6 +58,7 @@ export const insertGrantApplicationSchema = z.object({
     projectDescription: z.string(),
     grantType: z.string(),
     requestedAmount: z.number(),
+    paymentMethod: z.string().nullable().optional(),
     fileUrl: z.string().nullable().optional(),
     fileName: z.string().nullable().optional(),
 });

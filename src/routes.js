@@ -335,7 +335,41 @@ export async function registerRoutes(app) {
             res.status(500).json({ message: "Failed to update application status" });
         }
     });
+    app.patch("/api/applications/:id/payment-method", authenticate, async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { paymentMethod } = req.body;
+
+            if (!["cheque", "bank_transfer"].includes(paymentMethod)) {
+                return res.status(400).json({ message: "Invalid payment method" });
+            }
+
+            const application = await storage.getApplication(id);
+            if (!application) {
+                return res.status(404).json({ message: "Application not found" });
+            }
+
+            // Only the owner can update their payment method
+            if (application.userId !== req.user.id && req.user.role !== "admin") {
+                return res.status(403).json({ message: "Access denied" });
+            }
+
+            // Only allowed if status is approved
+            if (application.status !== "approved") {
+                return res.status(400).json({ message: "Payment method can only be selected for approved applications" });
+            }
+
+            const updatedApplication = await storage.updatePaymentMethod(id, paymentMethod);
+            res.json(updatedApplication);
+        }
+        catch (error) {
+            console.error('[API] Payment method update error:', error);
+            res.status(500).json({ message: "Failed to update payment method" });
+        }
+    });
+
     // User routes (admin only)
+
     app.get("/api/users", authenticate, requireAdmin, async (req, res) => {
 
         try {
